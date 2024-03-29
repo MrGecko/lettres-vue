@@ -18,10 +18,11 @@
         v-model="tags"
         placeholder="Français"
         :data="filteredTags"
-        :readonly="editable"
+        :readonly="!editable"
         autocomplete
         field="label"
         open-on-focus
+        @click.native="getFilteredTags"
         @typing="getFilteredTags"
         @keyup.esc.native="cancelInput($event)"
       />
@@ -41,7 +42,7 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
+import {mapActions, mapState} from "vuex";
 import IconPenEdit from "../ui/icons/IconPenEdit";
 import IconSuccess from "../ui/icons/IconSuccess";
 
@@ -64,9 +65,7 @@ export default {
   },
   computed: {
     ...mapState("document", ["document", "languages"]),
-    ...mapState({
-      allLanguages: (state) => state.languages.languages,
-    }),
+    ...mapState("languages", {allLanguages: "languages"}),
     editButtonIcon () {
       if (this.status === 'success') {
         return IconSuccess;
@@ -104,16 +103,18 @@ export default {
   },
   methods: {
     getFilteredTags(text) {
-      this.filteredTags = this.allLanguages.filter((option) => {
-        return option.label.toString().toLowerCase().indexOf(text.toLowerCase()) >= 0;
-      });
+      if (text && text.length > 0) {
+        this.filteredTags = this.allLanguages.filter((option) => {
+          return option.label.toString().toLowerCase().indexOf(text.toLowerCase()) >= 0;
+        });
+      } else {
+        this.filteredTags = this.allLanguages
+      }
     },
     cancelInput(evt) {
-      console.log("Language event ", { ...evt });
       this.enterEditMode()
     },
     enterEditMode() {
-      console.log("this.editMode", this.editMode)
       this.editMode = !this.editMode
     }
   },
