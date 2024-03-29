@@ -10,15 +10,14 @@ import {
 import {getInstitution} from '../witnesses'
 
 const TRANSLATION_MAPPING = {
-  'creation' : 'Date de création',
+  'is-published': 'du Statut de publication',
+  'argument': 'de l\'Analyse',
+  'transcription': 'de la Transcription',
+  'title': 'du Titre',
+  'address': 'de l\'Adresse'
+};/*'creation' : 'Date de création',
   'creation-not-after' : 'Date de création (borne supérieure)',
-  'creation-label' : 'Date de création (étiquette)',
-  'is-published': 'Statut de publication',
-  'argument': 'Argument',
-  'transcription': 'Transcription',
-  'title': 'Titre',
-  'address': 'Adresse'
-};
+  'creation-label' : 'Date de création (étiquette)',*/
 
 const placenameRegexp = /(?:class="placeName" (?:target="_blank" href="[^>]*".)?id=")(\d+)/gmi;
 const personRegexp = /(?:class="persName" (?:target="_blank" href="[^>]*".)?id=")(\d+)/gmi;
@@ -374,11 +373,19 @@ const actions = {
     // track changes
     if (state.document.id !== dummy.data.id) {
       let msg = null;
-      if (modifiedData && modifiedData.length > 0) {
-        console.log("track_topic modifiedData && modifiedData.length", track_topic, modifiedData, modifiedData.length)
+      /*if (modifiedData && modifiedData.length > 0) {
+        console.log("modifiedData && modifiedData.length > 0", track_topic, modifiedData, modifiedData.length)
         msg = `Modification de ${Object.keys(modifiedData).map(
           d => `'${TRANSLATION_MAPPING[d] ? TRANSLATION_MAPPING[d] : d}'`
         ).join(', ')}`;
+      }*/
+      if (modifiedData && !Object.values(modifiedData).every(x => x == null || x === '')) {
+        //console.log("modifiedData && !Object.values(modifiedData).every(x => x == null || x === '')", track_topic, modifiedData, Object.keys(modifiedData).length)
+        if (Object.keys(modifiedData).some((k) => Object.hasOwn(TRANSLATION_MAPPING, k))) {
+          msg = `Modification ${Object.keys(modifiedData).map(
+            d => TRANSLATION_MAPPING[d] ? TRANSLATION_MAPPING[d] : false
+          ).filter(Boolean).join(', ')}`;
+        }
       }
       console.log("changelog track_topic", track_topic)
       if (track_topic){
@@ -386,12 +393,27 @@ const actions = {
         console.log("track_topic msg", track_topic, msg)
       }
       console.log("dispatch changelog")
-      this.dispatch('changelog/trackChanges', {
-        objId: state.document.id,
-        objType: 'document',
-        userId: rootState.user.current_user.id,
-        msg: msg
-      });
+      if (Array.isArray(msg)) {
+        msg.forEach((m) => {
+          this.dispatch("changelog/trackChanges", {
+            objId: state.document.id,
+            objType: 'document',
+            userId: rootState.user.current_user.id,
+            msg: m
+          }).then(() => {
+            //console.log("changelog updated")
+          }).catch(() => {
+            console.log("changelog not updated (", m,")")
+          });
+        })
+      } else {
+        this.dispatch('changelog/trackChanges', {
+          objId: state.document.id,
+          objType: 'document',
+          userId: rootState.user.current_user.id,
+          msg: msg
+        });
+      }
     } 
     return returnedResponse
   },
