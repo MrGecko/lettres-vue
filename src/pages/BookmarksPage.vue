@@ -1,6 +1,6 @@
 <template>
   <div>
-    <span class="menu__title">Mes favoris</span>
+    <page-title :title="'Mes favoris'" />
     <div class="results-count-and-pagination">
       <div class="popup-list-header is-flex is-justify-content-space-between is-align-items-center">
         <div class="results-count">
@@ -298,11 +298,13 @@
 <script>
 import { mapState, mapActions, mapGetters } from "vuex";
 import DocumentTagBar from "@/components/document/DocumentTagBar";
+import PageTitle from "@/components/ui/PageTitle";
 
 export default {
   name: "BookmarksPage",
   components: {
     DocumentTagBar,
+    PageTitle,
   },
   filters: {
     /**
@@ -563,20 +565,6 @@ export default {
         }
       }
     }
-  }
-  .menu__title {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 20px;
-
-    border: none;
-    padding: 10px 0;
-    font-family: $family-secondary;
-    font-size: 16px;
-    color: #C00055 !important;
-    font-weight: 500;
-    text-decoration: none;
-    text-transform: uppercase;
   }
 
   /* Chrome, Safari, Edge, Opera */

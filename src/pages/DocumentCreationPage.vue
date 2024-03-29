@@ -1,7 +1,12 @@
 <template>
   <div>
+    <page-title :title="'Créer un nouveau document'" />
     <section>
-      <b-field>
+      <b-field
+        :label="'Renseigner le titre du document'"
+        :type="invalidTitle ? 'is-danger' : null"
+        :message="invalidTitle ? 'Titre obligatoire' : null"
+      >
         <rich-text-editor
           v-model="title"
           :multiline="false"
@@ -9,11 +14,10 @@
           :options="{ placeholder: 'Ex. Français 3512, Ms. 564, K 35' }"
         />
       </b-field>
-      <b-button
-        type="is-primary"
+      <create-button
         label="Créer le document"
         :loading="loading"
-        @click="createNewDocument"
+        @click="submit"
       />
     </section>
   </div>
@@ -22,23 +26,41 @@
 <script>
 import RichTextEditor from "@/components/forms/fields/RichTextEditor.vue";
 import { mapState, mapActions } from "vuex";
+import PageTitle from "@/components/ui/PageTitle";
+import CreateButton from "@/components/ui/CreateButton.vue"
 
 export default {
   name: "DocumentCreationPage",
-  components: { RichTextEditor },
+  components: {
+    RichTextEditor,
+    PageTitle,
+    CreateButton,
+  },
   data() {
     return {
       title: "Ceci est le titre du nouveau document",
       loading: false,
-      defaultTitle: `${process.env.VUE_APP_UNSORTED_DOCUMENTS_COLLECTION_TITLE}`
+      defaultTitle: `${process.env.VUE_APP_UNSORTED_DOCUMENTS_COLLECTION_TITLE}`,
+      invalidTitle: false,
     };
   },
   computed: {
     ...mapState("document", ["document", "documentLoading"]),
     ...mapState("collections", ["collectionsById"])
   },
+  watch: {
+    title() {
+      this.invalidTitle = this.title === ""
+    }
+  },
   methods: {
     ...mapActions("collections", ["fetchAll"]),
+    submit() {
+      this.invalidTitle = this.title === ""
+      if (!this.invalidTitle) {
+        this.createNewDocument()
+      }
+    },
     async createNewDocument() {
       this.loading = true;
       const defaultData = {
@@ -64,13 +86,18 @@ export default {
       this.$router.push({ name: "document", params: { docId: doc.id } });
       this.loading = false;
     },
+    created(){
+      this.fetchAll();
+    }
   },
-  created(){
-    this.fetchAll();
-  }
 };
 </script>
 
 <style scoped lang="scss">
 @import "@/assets/sass/main.scss";
+
+::v-deep .label {
+  padding-bottom: 10px;
+}
+
 </style>

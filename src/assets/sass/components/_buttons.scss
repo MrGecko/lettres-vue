@@ -1,5 +1,5 @@
 
-.create-collection-btn.is-primary {
+.create-btn.is-primary {
   height: 38px;
   border: solid 1px #C00055 !important;
   border-radius: 5px;
@@ -10,6 +10,10 @@
   color: #C00055 !important;
   font-weight: 400;
   text-transform: uppercase;
+
+  @include on-small-mobile {
+    font-size: 12px;
+  }
 
   &:focus,
   &:hover {
