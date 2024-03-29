@@ -152,10 +152,8 @@
             custom
             append
           >
-            <b-button
-              type="is-primary"
+            <create-button
               label="Créer une sous-collection"
-              class="create-collection-btn"
               @click="navigate"
             />
           </router-link>
@@ -181,7 +179,7 @@
                 :class="saving === 'loading' ? 'is-loading' : ''"
                 @click.stop="save"
               >
-              <save-button-icon
+                <save-button-icon
                   :status="status"
                 />
               </a>
@@ -259,7 +257,7 @@
                 :class="{'input--error':!collection.title}"
                 type="text"
                 :initial-value="collection.title"
-                v-on:keyup.esc="enterEditMode"
+                @keyup.esc="enterEditMode"
               >
               <!-- original save button next to title
               <div class="control">
@@ -534,11 +532,19 @@ import RichTextEditor from "@/components/forms/fields/RichTextEditor.vue";
 import IconSave from '@/components/ui/icons/IconSave';
 import IconError from '@/components/ui/icons/IconError';
 import IconSuccess from '@/components/ui/icons/IconSuccess';
+import CreateButton from "@/components/ui/CreateButton.vue"
 
 
 export default {
   name: "CollectionInteractiveCard",
-  components: { CollectionResponsables, SaveButtonIcon, CollectionHierarchy, CollectionDeletion, RichTextEditor }, // original component for description TitleFieldInPlace
+  components: {
+    CollectionResponsables,
+    SaveButtonIcon,
+    CollectionHierarchy,
+    CollectionDeletion,
+    RichTextEditor,
+    CreateButton,
+  }, // original component for description TitleFieldInPlace
   props: {
     collectionId: { type: Number, required: true },
     editable: { type: Boolean, default: false },
@@ -827,12 +833,6 @@ export default {
       .control > a {
         width: 38px !important;
         height: 38px !important;
-      }
-
-      .create-collection-btn {
-        @include on-small-mobile {
-          font-size: 12px;
-        }
       }
     }
   }

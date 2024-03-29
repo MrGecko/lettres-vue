@@ -1,6 +1,6 @@
 <template>
   <div>
-    <span class="menu__title">Mes verrous</span>
+    <page-title :title="'Mes verrous'" />
     <div class="results-count-and-pagination">
       <div class="popup-list-header is-flex is-justify-content-space-between is-align-items-center">
         <div class="results-count">
@@ -84,8 +84,8 @@
         :checked-rows.sync="checkedRows"
         :custom-is-checked="(a, b) => { return a.id === b.id }"
 
-        @sort="sortPressed"
         backend-filtering
+        @sort="sortPressed"
         @filters-change="onFilter"
       >
         <template #bottom-left>
@@ -135,7 +135,7 @@
             </b-taginput>
          </template>-->
 
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -175,7 +175,7 @@
           sortable
           searchable
         >
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -215,7 +215,7 @@
           :sortable="current_user.isAdmin"
           :searchable="current_user.isAdmin"
         >
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -250,7 +250,7 @@
           sortable
           searchable
         >
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -285,7 +285,7 @@
           sortable
           searchable
         >
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -323,7 +323,7 @@
           sortable
           searchable
         >
-          <template v-slot:header="{ column }">
+          <template #header="{ column }">
             <div v-if="column.sortable">
               <div v-if="sortingPriority.filter(obj => obj.field === column.field).length === 0">
                 <span class="icon button arrows-alt-v" />
@@ -425,6 +425,7 @@ import DocumentTagBar from "@/components/document/DocumentTagBar";
 import LockForm from "@/components/forms/LockForm";
 import Document from "@/components/sections/Document.vue";
 import DocumentListDetails from "@/components/sections/DocumentListDetails.vue";
+import PageTitle from "@/components/ui/PageTitle";
 
 export default {
   name: "LocksPage",
@@ -432,7 +433,8 @@ export default {
     DocumentListDetails,
 
     DocumentTagBar,
-    LockForm
+    LockForm,
+    PageTitle,
   },//Document,
   data() {
     return {
@@ -887,20 +889,6 @@ export default {
     font-size: 20px;
     font-weight: 500;
     color: #C00055;
-  }
-  .menu__title {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 20px;
-
-    border: none;
-    padding: 10px 0;
-    font-family: $family-secondary;
-    font-size: 16px;
-    color: #C00055 !important;
-    font-weight: 500;
-    text-decoration: none;
-    text-transform: uppercase;
   }
 
   // Smaller tags :

@@ -32,10 +32,8 @@
             to="/collections/create"
             custom
           >
-            <b-button
-              type="is-primary"
+            <create-button
               label="Créer une collection"
-              class="create-collection-btn"
               @click="navigate"
             />
           </router-link>
@@ -50,14 +48,12 @@
                 :disabled="currentPage <= 1"
                 :class="currentPage <= 1 ? 'button first-page disabled' : 'button first-page'"
                 @click="currentPage <= 1 ? null : currentPage = 1"
-              >
-              </a>
+              />
               <a
                 :disabled="currentPage <= 1"
                 :class="currentPage <= 1 ? 'button previous-page disabled' : 'button previous-page'"
                 @click="currentPage <= 1 ? null : --currentPage"
-              >
-              </a>
+              />
               <input
                 v-model="currentPage"
                 name="page"
@@ -74,14 +70,12 @@
                 :disabled="currentPage >= totalPages"
                 :class="currentPage < totalPages ? 'button next-page' : 'button next-page disabled'"
                 @click="currentPage < totalPages ? ++currentPage : null"
-              >
-              </a>
+              />
               <a
                 :disabled="currentPage >= totalPages"
                 :class="currentPage < totalPages ? 'button last-page' : 'button last-page disabled'"
                 @click="currentPage < totalPages ? currentPage = totalPages : null"
-              >
-              </a>
+              />
             </div>
           </div>
         </div>
@@ -137,12 +131,14 @@
 import { mapActions, mapGetters, mapState} from "vuex";
 import CollectionListItem from "@/components/CollectionListItem.vue"
 import CollectionSearchResult from "@/components/CollectionSearchResult.vue"
+import CreateButton from "@/components/ui/CreateButton.vue"
 
 export default {
   name: "CollectionsPage",
   components: {
     CollectionListItem,
     CollectionSearchResult,
+    CreateButton,
   },
   data() {
     return {
@@ -238,7 +234,6 @@ export default {
 <style lang="scss">
 @import "@/assets/sass/main.scss";
 @import "@/assets/sass/objects/collection.scss";
-@import "@/assets/sass/components/_buttons.scss";
 
 .collection-list-header {
   margin-bottom: 15px;

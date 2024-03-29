@@ -1,6 +1,6 @@
 <template>
   <div>
-    <span class="menu__title">Mon historique</span>
+    <page-title :title="'Mon historique'" />
     <changelog />
   </div>
 </template>
@@ -8,11 +8,13 @@
 <script>
 import { mapState, mapActions } from "vuex";
 import Changelog from "@/components/sections/Changelog";
+import PageTitle from "@/components/ui/PageTitle";
 
 export default {
   name: "HistoryPage",
   components: {
     Changelog,
+    PageTitle,
   },
   data() {
     return {
@@ -63,18 +65,4 @@ export default {
 @import "@/assets/sass/main.scss";
 @import "@/assets/sass/components/_search_results_table.scss";
 @import "@/assets/sass/components/_search_results_pagination.scss";
-.menu__title {
-  display: block;
-  margin-top: 10px;
-  margin-bottom: 20px;
-
-  border: none;
-  padding: 10px 0;
-  font-family: $family-secondary;
-  font-size: 16px;
-  color: #C00055 !important;
-  font-weight: 500;
-  text-decoration: none;
-  text-transform: uppercase;
-}
 </style>
