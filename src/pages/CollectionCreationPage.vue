@@ -12,20 +12,21 @@
           class="input"
           :multiline="false"
           :placeholder="`Titre de la ${collectionType}`"
+          @focus="$event.target.select()"
         >
       </b-field>
       <b-field :label="`Renseigner la description de la ${collectionType}`">
         <rich-text-editor
           v-model="description"
           :multiline="true"
-          :formats="[['italic', 'superscript', 'note']]"
+          :formats="[['italic', 'superscript']]"
           :options="{ placeholder: `Description de la ${collectionType}` }"
         />
       </b-field>
       <b-field
         label="Curator"
-        :type="error.field === 'curator' ? 'is-danger' : null"
-        :message="error.field === 'curator' ? error.title : null"
+        :type="!curatorId ? 'is-danger' : error.field === 'curator' ? 'is-danger' : null"
+        :message="!curatorId ? 'Curator obligatoire' : error.field === 'curator' ? error.title : null"
       >
         <b-select
           v-model="curatorId"
@@ -43,6 +44,7 @@
         :label="`Créer la ${collectionType}`"
         class="create-button"
         :loading="loading"
+        :disabled="Object.keys(error).length > 0 || !curatorId"
         @click="createNewCollection"
       />
       <p
@@ -146,10 +148,10 @@ export default {
 </script>
 <style scoped lang="scss">
 @import "@/assets/sass/main.scss";
-input:placeholder-shown {
-   font-style: italic;
+.input {
+  font-family: Helvetica, Arial, sans-serif;
+  color: #4a4a4a;
 }
-
 ::v-deep .label {
   padding-bottom: 10px;
 }

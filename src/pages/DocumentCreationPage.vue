@@ -10,13 +10,14 @@
         <rich-text-editor
           v-model="title"
           :multiline="false"
-          :formats="[['italic', 'superscript', 'note']]"
+          :formats="[['italic', 'superscript']]"
           :options="{ placeholder: 'Ex. Français 3512, Ms. 564, K 35' }"
         />
       </b-field>
       <create-button
         label="Créer le document"
         :loading="loading"
+        :disabled="invalidTitle"
         @click="submit"
       />
     </section>
