@@ -1191,6 +1191,10 @@ export default {
   &:not(.can-edit) {
 
     /* Ajout par Victor */
+    & > .document__display > .document__content {
+      width: 100%;
+    }
+
     & > .document__display > .document__content.images-mode {
       margin-top: 20px;
       display: none !important;
