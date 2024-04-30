@@ -142,9 +142,9 @@
 import { mapState, mapActions } from "vuex";
 import NavBar from "@/components/NavBar.vue";
 import SearchBox from "@/components/SearchBox";
+import AdvancedSearchForm from "@/components/AdvancedSearchForm.vue";
 import background_image from "@/assets/images/about.jpg";
 /*import SideBar from "@/components/SideBar.vue";*/
-//import AdvancedSearchForm from ;
 
 export default {
   name: "LayoutDefault",
@@ -153,9 +153,8 @@ export default {
     NavBar,
     /*SideBar,*/
     SearchBox,
-    AdvancedSearchForm: () => import("@/components/AdvancedSearchForm.vue"),
-
-  },//MiradorViewer: () => import("@/components/MiradorViewer"),
+    AdvancedSearchForm,
+  },
   data: function () {
     return {
       background_image: background_image,
