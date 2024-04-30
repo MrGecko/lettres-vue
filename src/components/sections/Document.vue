@@ -479,6 +479,7 @@
               v-if="document && displayedManifestUrl"
               class="mirador-container"
               :manifest-url="displayedManifestUrl"
+              :window-id="docId.toString()"
             />
           </div>
         </div>

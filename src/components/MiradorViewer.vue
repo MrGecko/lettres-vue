@@ -1,10 +1,9 @@
 <template>
   <div
-    v-show="viewer"
     :id="`vue-mirador-container-${windowId}`"
     class="vue-mirador-container"
     @refresh-viewer="updateCurrentWindow"
-  />
+  /><!-- v-show="viewer" -->
 </template>
 
 <script>
@@ -32,7 +31,7 @@ export default {
   },
   watch: {
     manifestUrl(newValue, oldValue) {
-      console.log("Mirador watch manifestUrl newValue", newValue)
+      console.log("Mirador watch manifestUrl / newValue : ", newValue)
       this.setManifestUrl(this.manifestUrl);
     },
     canvasIndex() {
@@ -42,16 +41,16 @@ export default {
     viewerMode: {
       immediate: true,
       handler(newValue, oldValue) {
-        console.log("viewerMode newValue", newValue)
+        console.log("Mirador watch viewerMode / newValue : ", newValue)
         //this.setCanvasId(this.canvasIndex)
       }
     }
   },
-  async created() {
-    this.$parent.$on("refresh-viewer", await this.updateCurrentWindow);
-  },
   async mounted() {
     await this.initialize();
+  },
+  async created() {
+    this.$parent.$on("refresh-viewer", await this.updateCurrentWindow);
   },
   methods: {
     ...mapActions("layout", ["setViewerMode", "setCanvasIndex"]),
@@ -59,7 +58,6 @@ export default {
       if (this.viewerMode === "text-mode" || !this.viewerMode) {
         this.setViewerMode("text-and-images-mode");
       }
-
       const manifests = {};
       let url = this.manifestUrl;
       try {
@@ -102,7 +100,7 @@ export default {
           },
           workspaceControlPanel: {
             enabled: false,
-          },
+          }
         });
       } catch (e) {
         console.warn("Mirador viewer: ", e);
@@ -114,8 +112,8 @@ export default {
         await this.initialize();
       }
       this.viewer.store.dispatch(action);
-      /*let state = this.viewer.store.getState()
-      console.log("dispatchAction this.viewer", this.viewer.store.getState())*/
+      /*let resetZoom  = Mirador.actions.maximizeWindow(this.windowId);
+      this.viewer.store.dispatch(resetZoom);*/
     },
 
     setManifestUrl(newUrl) {
