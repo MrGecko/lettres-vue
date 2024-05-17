@@ -476,6 +476,7 @@
             :style="miradorViewCssStyle"
           >
             <mirador-viewer
+              :key="docId.toString()"
               v-if="document && displayedManifestUrl"
               class="mirador-container"
               :manifest-url="displayedManifestUrl"

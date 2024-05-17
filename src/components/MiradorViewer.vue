@@ -1,5 +1,6 @@
 <template>
   <div
+    :key="windowId"
     :id="`vue-mirador-container-${windowId}`"
     class="vue-mirador-container"
     @refresh-viewer="updateCurrentWindow"
@@ -7,7 +8,12 @@
 </template>
 
 <script>
-import Mirador from "mirador";
+import React from 'react';
+import ReactDOM from "react-dom";
+import {Provider} from 'react-redux';
+import {actions as MiradorActions} from "mirador";
+import MiradorApp from 'mirador/dist/es/src/components/App';
+import createPluggableStore from 'mirador/dist/es/src/state/createPluggableStore';
 import {mapActions, mapState} from "vuex";
 
 export default {
@@ -19,7 +25,8 @@ export default {
   },
   data() {
     return {
-      viewer: null,
+      reactRoot: null,
+      miradorStore: null,
       defaultManifestUrl: null,
       canvasId: '',
     };
@@ -47,7 +54,11 @@ export default {
     }
   },
   async mounted() {
+    console.log("MIRACLE: INIT")
     await this.initialize();
+  },
+  beforeDestroy() {
+    this.reactRoot.unmount()
   },
   async created() {
     this.$parent.$on("refresh-viewer", await this.updateCurrentWindow);
@@ -74,8 +85,9 @@ export default {
       };
 
       try {
-        this.viewer = Mirador.viewer({
-          id: `vue-mirador-container-${this.windowId}`,
+        const viewerContainerId = `vue-mirador-container-${this.windowId}`;
+        const viewerConfig = {
+          id: viewerContainerId,
           manifests: manifests,
           windows: [
             {
@@ -101,43 +113,50 @@ export default {
           workspaceControlPanel: {
             enabled: false,
           }
-        });
+        }
+        this.reactRoot = ReactDOM.createRoot(document.getElementById(viewerContainerId));
+        this.miradorStore = createPluggableStore(viewerConfig);
+        this.reactRoot.render(
+          React.createElement(
+            Provider,
+            {store: this.miradorStore},
+            React.createElement(
+              MiradorApp,
+              {plugins: []}
+            )
+          ),
+        )
       } catch (e) {
         console.warn("Mirador viewer: ", e);
       }
     },
-    async dispatchAction(action) {
-      if (this.viewer === null) {
-        console.log("dispatchAction initialise", this.viewer, this.windowId)
-        await this.initialize();
-      }
-      this.viewer.store.dispatch(action);
-      /*let resetZoom  = Mirador.actions.maximizeWindow(this.windowId);
-      this.viewer.store.dispatch(resetZoom);*/
+    async dispatchMiradorAction(action) {
+      this.miradorStore.dispatch(action);
     },
 
     setManifestUrl(newUrl) {
       //console.log("setManifestUrl", newUrl);
-      const action = Mirador.actions.updateWindow(this.windowId, {
+      const action = MiradorActions.updateWindow(this.windowId, {
         manifestId: this.manifestUrl,
       });
-      this.dispatchAction(action);
+      this.dispatchMiradorAction(action);
     },
 
     async setCanvasId(canvasIndex) {
       console.log("setCanvasId", canvasIndex)
       this.canvasId = this.witnesses[0].manifest.sequences[0]["canvases"][canvasIndex]["@id"];
-      const action = Mirador.actions.setCanvas(this.windowId, this.canvasId);
+      const action = MiradorActions.setCanvas(this.windowId, this.canvasId);
       if (this.viewerMode === "text-mode" || !this.viewerMode) {
         this.setViewerMode("text-and-images-mode");
       }
-      this.dispatchAction(action);
+      this.dispatchMiradorAction(action);
     },
 
     updateCurrentWindow() {
       console.log("refresh-viewer caught by mirador viewer");
       this.setManifestUrl(this.manifestUrl);
     },
+
   },
 };
 </script>
