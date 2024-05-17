@@ -476,7 +476,6 @@
             :style="miradorViewCssStyle"
           >
             <mirador-viewer
-              :key="docId.toString()"
               v-if="document && displayedManifestUrl"
               class="mirador-container"
               :manifest-url="displayedManifestUrl"
@@ -682,10 +681,10 @@
           </div>
         </section>
         <mirador-viewer
-            v-if="displayedManifestUrl"
-            class="mirador-container"
-            :manifest-url="witnessTmpList.filter(doc => doc.id === docId)[0].witnesses[0]['manifest_url']"
-            :window-id="docId.toString()"
+          v-if="displayedManifestUrl"
+          class="mirador-container"
+          :manifest-url="witnessTmpList.filter(doc => doc.id === docId)[0].witnesses[0]['manifest_url']"
+          :window-id="docId.toString()"
         />
 
         <!-- collections

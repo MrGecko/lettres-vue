@@ -1,6 +1,5 @@
 <template>
   <div
-    :key="windowId"
     :id="`vue-mirador-container-${windowId}`"
     class="vue-mirador-container"
     @refresh-viewer="updateCurrentWindow"
@@ -11,7 +10,7 @@
 import React from 'react';
 import ReactDOM from "react-dom";
 import {Provider} from 'react-redux';
-import {actions as MiradorActions} from "mirador";
+import Mirador from "mirador";
 import MiradorApp from 'mirador/dist/es/src/components/App';
 import createPluggableStore from 'mirador/dist/es/src/state/createPluggableStore';
 import {mapActions, mapState} from "vuex";
@@ -54,7 +53,6 @@ export default {
     }
   },
   async mounted() {
-    console.log("MIRACLE: INIT")
     await this.initialize();
   },
   beforeDestroy() {
@@ -136,7 +134,7 @@ export default {
 
     setManifestUrl(newUrl) {
       //console.log("setManifestUrl", newUrl);
-      const action = MiradorActions.updateWindow(this.windowId, {
+      const action = Mirador.actions.updateWindow(this.windowId, {
         manifestId: this.manifestUrl,
       });
       this.dispatchMiradorAction(action);
@@ -145,7 +143,7 @@ export default {
     async setCanvasId(canvasIndex) {
       console.log("setCanvasId", canvasIndex)
       this.canvasId = this.witnesses[0].manifest.sequences[0]["canvases"][canvasIndex]["@id"];
-      const action = MiradorActions.setCanvas(this.windowId, this.canvasId);
+      const action = Mirador.actions.setCanvas(this.windowId, this.canvasId);
       if (this.viewerMode === "text-mode" || !this.viewerMode) {
         this.setViewerMode("text-and-images-mode");
       }
@@ -156,7 +154,6 @@ export default {
       console.log("refresh-viewer caught by mirador viewer");
       this.setManifestUrl(this.manifestUrl);
     },
-
   },
 };
 </script>
