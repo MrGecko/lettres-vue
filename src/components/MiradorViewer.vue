@@ -8,12 +8,14 @@
 
 <script>
 import React from 'react';
-import ReactDOM from "react-dom";
+import ReactDOM from "react-dom/client";
 import {Provider} from 'react-redux';
 import Mirador from "mirador";
 import MiradorApp from 'mirador/dist/es/src/components/App';
 import createPluggableStore from 'mirador/dist/es/src/state/createPluggableStore';
 import {mapActions, mapState} from "vuex";
+
+let NEXT_MUI_CLASSES_SEED = 0;
 
 export default {
   name: "MiradorViewer",
@@ -110,6 +112,10 @@ export default {
           },
           workspaceControlPanel: {
             enabled: false,
+          },
+          createGenerateClassNameOptions: {
+            productionPrefix: "mirador",
+            seed: NEXT_MUI_CLASSES_SEED++
           }
         }
         this.reactRoot = ReactDOM.createRoot(document.getElementById(viewerContainerId));
