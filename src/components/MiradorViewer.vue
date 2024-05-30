@@ -113,6 +113,20 @@ export default {
           workspaceControlPanel: {
             enabled: false,
           },
+          selectedTheme:'light',
+          themes: {
+             light: {
+               palette: {
+                 type: 'light',
+                 primary: {
+                   main: '#c00055'
+                 },
+                 secondary: {
+                   main: '#ff0052'
+                 }
+               },
+             },
+          },
           createGenerateClassNameOptions: {
             productionPrefix: "mirador",
             seed: NEXT_MUI_CLASSES_SEED++
@@ -182,7 +196,8 @@ export default {
 .mosaic-tile {
   margin: 0 !important;
 }
-.Connect\(WithPlugins\(WindowTopBar\)\)-windowTopBarStyle-16.Connect\(WithPlugins\(WindowTopBar\)\)-focused-15 {
+* [class*="mirador-window-top-bar"] {
   border-top: none !important;
 }
+
 </style>
