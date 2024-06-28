@@ -53,6 +53,7 @@
         counter-increment: paragraph;
         content: "¶" counter(paragraph);
         padding-right: 8px;
+        pointer-events: none;
       }
 
     }
