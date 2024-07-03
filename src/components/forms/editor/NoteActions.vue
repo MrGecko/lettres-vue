@@ -100,7 +100,7 @@
             :title="!existingNote ? 'Aucune note sélectionnée' : ''"
             type="is-primary"
             size="is-medium"
-            @click="deleteAction(parseInt(inputData.formats.note.id))"
+            @click="showDeleteConfirmModal(parseInt(inputData.note.id))"
           >
             <span>Supprimer</span>
           </b-button>
@@ -201,43 +201,32 @@
       this.transcriptionContent = this.$props.transcriptionEditor;
       this.addressContent = this.$props.addressEditor;
 
-      // check if triggered from notes list (this.inputData.note) or existing note in editor (this.inputData.formats.note) :
       console.log("NoteActions mounted inputData", this.inputData)
       this.docNotesCount = this.$store.state.document.notes.length;
       //console.log("NoteActions mounted newNote", this.newNote)
-      if (this.inputData.note || this.inputData.formats.note) {
-        if (this.inputData.note) {
-          console.log("NNoteActions mounted inputData : ", this.inputData)
-        } else {
-          console.log("NoteActions mounted inputData (existing note) : ", this.inputData)
-          // retrieve note if from inputData
-          let existingNoteId = parseInt(this.inputData.formats.note.id);
-          console.log("NoteActions mounted existingNoteId : ", existingNoteId)
-          // retrieve note content from store
-          this.existingNote = this.$store.state.document.notes.filter((note) => parseInt(note.id) === existingNoteId)[0];
-          console.log("NoteActions existingNote : ", this.existingNote);
-        }
+      if (this.inputData.note) {
+        console.log("NoteActions mounted inputData (existing note) : ", this.inputData)
+        // retrieve note if from inputData
+        let existingNoteId = parseInt(this.inputData.note.id);
+        console.log("NoteActions mounted existingNoteId : ", existingNoteId)
+        // retrieve note content from store
+        this.existingNote = this.$store.state.document.notes.filter((note) => parseInt(note.id) === existingNoteId)[0];
+        console.log("NoteActions existingNote : ", this.existingNote);
       }
     },
     methods: {
       newAction() {
-        //console.log("this.$props.newNote", this.$props.newNote)
-        //console.log("type this.$props.newNote", typeof (this.$props.newNote))
         console.log("NoteActions newAction this.inputData : ", this.inputData)
         this.noteWithMode = this.inputData;
         this.noteWithMode.action = "new";
         this.$emit("add-note", this.noteWithMode);
         this.$emit("close");
       },
-      deleteAction(noteId) {
-        console.log("deleteAction : noteId", noteId)
+      showDeleteConfirmModal(noteId) {
         let storeNoteToUpdate = this.$store.state.document.notes.filter(n => n.id === noteId)[0];
-        console.log("deleteAction : found storeNoteToUpdate", storeNoteToUpdate)
         if (storeNoteToUpdate.occurences && storeNoteToUpdate.occurences > 1) {
           storeNoteToUpdate.occurences -= 1;
-          console.log("deleteAction : storeNoteToUpdate decrement", storeNoteToUpdate)
           this.$store.dispatch("document/updateNote", storeNoteToUpdate).then((storeNote) => {
-          console.log("NoteActions / deleteAction / Updated Note", storeNote);
           })
           this.inputData.removeTagCallback();
           this.$emit("close");

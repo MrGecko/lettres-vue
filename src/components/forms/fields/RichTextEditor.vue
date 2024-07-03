@@ -23,6 +23,17 @@
           />
         </div>
         <div
+          class="editor-controls-group field has-addons"
+        >
+          <editor-button
+            :active="editorHasFocus"
+            :callback="clearFormat"
+            :selected="false"
+            format="remove"
+          />
+        </div>
+
+        <div
           v-if="slotNotEmpty"
           class="editor-controls-group is-additional"
         >
@@ -58,17 +69,17 @@
 </template>
 
 <script>
-import Vue from "vue";
 import ClickOutside from "vue-click-outside";
 import EditorButton from "./EditorButton.vue";
 import TextfieldForm from "../TextfieldForm";
-import FieldLabel from "./FieldLabel";
-import EditorMixins from "@/components/forms/editor/EditorMixins";
 
-import Quill, { getNewQuill } from "../../../modules/quill/LettresQuill";
+import Quill, { Embed, getNewQuill } from "../../../modules/quill/LettresQuill";
 import { getNewDelta } from "../../../modules/quill/DeltaUtils";
 import _isEmpty from "lodash/isEmpty";
-import PersonBlot from "@/modules/quill/blots/Person";
+import NoteBlot from "@/modules/quill/blots/Note";
+import PageBlot from "@/modules/quill/blots/Page";
+
+const Parchment = Quill.import("parchment");
 
 const wrapPattern = /^<p>(.*)<\/p>$/im;
 
@@ -103,19 +114,10 @@ export default {
       editor: null,
       editorElement: null,
       editorContentElement: null,
-      editorHasFocus: false,
       currentSelection: null,
       formTextfield: null,
-      actionsPositions: {
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-      },
       editorInited: false,
       delta: null,
-      customSubmitTextfieldForm: null,
-      buttons: {},
       showNoteActionForm: false,
       requireSave: false,
     };
@@ -124,8 +126,8 @@ export default {
   computed: {
     formatCallbacks() {
       return {
-        note: { cb: this.displayNoteActionForm, active: this.editorHasFocus },
-        page: { cb: this.displayPageBreakForm, active: this.editorHasFocus },
+        note: { cb: this.displayNoteActionForm, active: this.editorHasFocus && (!this.selectedEmbed  || this.selectedEmbed instanceof NoteBlot)},
+        page: { cb: this.displayPageBreakForm, active: this.editorHasFocus && (!this.selectedEmbed || this.selectedEmbed instanceof PageBlot)},
         link: { cb: this.displayLinkForm, active: this.editorHasFocus },
         bold: { cb: this.simpleFormat, active: this.editorHasFocus },
         italic: { cb: this.simpleFormat, active: this.editorHasFocus },
@@ -150,23 +152,44 @@ export default {
     slotNotEmpty() {
       return !!this.$slots.default;
     },
+    editorHasFocus() {
+      return this.currentSelection !== null;
+    },
+    selectedEmbed() {
+      if (this.currentSelection && this.currentSelection.length === 1) {
+        const [node, _] = this.editor.getLeaf(this.currentSelection.index+1)
+
+        if (node instanceof Embed) {
+          return node;
+        }
+      }
+      return null
+    },
+    selectedFormats() {
+      const range = this.currentSelection;
+      if (range === null) {
+        return {}
+      }
+      const formats = this.editor.getFormat(this.currentSelection)
+      const embed = this.selectedEmbed;
+      if (embed) {
+          const blotName = embed.statics.blotName;
+          formats[blotName] = embed.value()[blotName];
+      }
+      return formats
+    },
+    buttons() {
+      return Object.fromEntries(Object.entries(this.selectedFormats).map(([key, value]) => [key, !!value]))
+     }
   },
 
   watch: {
     value(val) {
-      console.log("watch", val)
-      const range = this.editor.getSelection();
-      this.editorContentElement.innerHTML = this.sanitize(val);
       if (this.requireSave) {
+        this.editorContentElement.innerHTML = this.sanitize(val);
         this.$emit("save");
         this.requireSave = false;
       }
-      Vue.nextTick(() => {
-        if (range) {
-          //console.log('setSelection', range.index)
-          this.editor.setSelection(range.index, range.length, Quill.sources.SILENT);
-        }
-      });
     },
     enabled(val) {
       this.editor.enable(val);
@@ -207,22 +230,24 @@ export default {
     },
 
     activateEvents() {
-      /*if (!this.multiline) {
-        this.editorElement.addEventListener("keydown", this.onSingleKeyup, true);
-      }*/
       this.editorElement.addEventListener("keydown", this.onSingleKeyup, true);
-      this.editor.on("selection-change", this.onSelection);
-      this.editor.on("selection-change", this.onFocus);
-      this.editor.on("text-change", this.onTextChange);
+      this.editor.on("editor-change", this.onEditorChange);
       this.editor.on("text-change", this.updateValue);
     },
+
     deactivateEvents() {
-      //console.log("EditorMixins.deactivateEvents")
       this.editorElement.removeEventListener("keydown", this.onSingleKeyup, true);
-      this.editor.off("selection-change", this.onSelection);
-      this.editor.off("selection-change", this.onFocus);
-      this.editor.off("text-change", this.onTextChange);
+      this.editor.off("editor-change", this.onEditorChange);
       this.editor.off("text-change", this.updateValue);
+    },
+
+    clearFormat() {
+      const format = this.editor.getFormat();
+      if (!_isEmpty(format)) {
+        for (const formatName of Object.keys(format)) {
+          this.editor.format(formatName, false)
+        }
+      }
     },
 
     getEditorHTML() {
@@ -289,134 +314,16 @@ export default {
       return newValue;
     },
 
-    preventLineBreaks(delta) {
-      const ops = delta.ops;
-      const l = ops.length;
-      return;
-      /*
-        if (ops[l-1].insert && ops[l-1].insert === '\n') {
-          const updateDelta = getNewDelta();
-          if (l === 1) {
-             updateDelta.delete(1)
-          } else {
-            const retain = ops[l-2].retain;
-            updateDelta.retain(retain).delete(1)
-          }
-          this.editor.updateContents(updateDelta, 'silent')
-        }
-         */
-    },
-
     /**************
      *
      * EDITOR EVENT HANDLERS
      */
-
-    onTextChange(delta, oldDelta, source) {
-      if (!this.multiline) {
-        this.preventLineBreaks(delta);
+    async onEditorChange(eventName, range) {
+      if (eventName !== "selection-change") {
+        return
       }
-      console.log("RTE onTextChange", delta, oldDelta, source)
-      if (delta.ops.length > 1 && delta.ops[1].delete) {
-        const diff = this.editor.getContents().diff(oldDelta).ops
-        console.log(' diff_del', diff)
-        diff.forEach(child => {
-          if (child.attributes && child.attributes.note) {
-            console.log("a note was deleted")
-          }
-
-        })
-      } else {
-              console.log("addition delta ops / oldDelta", delta.ops)
-              if (delta.ops.length > 1 && delta.ops[1].insert) {
-                const diff = oldDelta.diff(this.editor.getContents()).ops
-                console.log(' diff_add', diff)
-                diff.forEach(child => {
-                  if (child.attributes && child.attributes.note) {
-                    console.log("a note was added")
-                  }
-
-                })
-              }
-
-      }
-
-      return;
-      /*
-        if (delta.ops.length > 1 && delta.ops[1].delete) {
-          const diff = this.editor.getContents().diff(oldDelta).ops
-          console.log(' diff', diff, diff.length > 1 && diff[1].insert && diff[1].insert.note)
-        }
-        */
-    },
-    async onSelection(range) {
-      console.log("RTE onSelection range", range)
-      console.log("RTE onSelection blots", this.editor.getContents(range.index, range.length).ops)
-      if (range) {
-        this.setRangeBound(range);
-        let formats = this.editor.getFormat(range.index, range.length);
-        /*if (formats.person && !formats.person.label) {
-          await this.$store.dispatch("persons/getPersonById", formats.person.id).then(
-              (response) => {
-                formats.person.label = response.attributes.label
-              });
-          this.expandSelection(range)
-          this.editor.format("person", formats.person);
-
-        }*/
-
-        console.log("onSelection / formats", formats);
-        if (["bold"].includes(Object.keys(formats)[0])) {
-          if (range.length === 0) {
-            let [node, Offset] = this.editor.getLeaf(range.index)
-            console.log("node : ", node)
-            let start = range.index - Offset;
-            console.log(node.text)
-            let length = node.text.length
-            console.log("length : ", length)
-            let end = start + length;
-            console.log("start : ", start)
-            console.log("end : ", end)
-            console.log("node.parent.domNode.nodeName", node.parent.domNode.nodeName.toLowerCase())
-            this.editor.setSelection(start, length, Quill.sources.SILENT)
-          }
-        } else if (["page", "note"].includes(Object.keys(formats)[0])) {
-          if (range.length === 0) {
-            let [node, Offset] = this.editor.getLeaf(range.index)
-            console.log("node : ", node)
-            console.log("Offset : ", Offset)
-            let start = range.index - Offset;
-            console.log("start : ", start)
-            let length = node.parent.domNode.text.length
-            console.log("node.contentNode.textContent", node.parent.domNode.text.length)
-            let end = start + length;
-            console.log("end : ", end)
-            console.log("node.contentNode.textContent.length", node.parent.domNode.text.length)
-            this.editor.setSelection(start, length, Quill.sources.SILENT)
-          }
-        }/* else if (["note"].includes(Object.keys(formats)[0])) {
-          if (range.length === 0) {
-            let [node, Offset] = this.editor.getLeaf(range.index)
-            console.log("node : ", node)
-            console.log("Offset : ", Offset)
-            let start = range.index - Offset;
-            console.log("start : ", start)
-            let length = node.contentNode.textContent.length
-            console.log("node.contentNode.textContent", node.contentNode.textContent)
-            let end = start + length;
-            console.log("end : ", end)
-            console.log("node.contentNode.textContent.length", node.contentNode.textContent.length)
-            this.editor.setSelection(start, length, Quill.sources.SILENT)
-          }
-        }*/
-        this.updateButtons(formats);
-        /* if (formats.note) {
-          console.log("onSelection / formats.note", formats.note)
-        }*/
-      } else {
-        /*let test = this.editor.getContents().ops
-        console.log("content test : ", test)*/
-        this.updateButtons({});
+      if (!this.formTextfield) {
+        this.currentSelection = range;
       }
     },
     onSingleKeyup(evt) {
@@ -434,9 +341,6 @@ export default {
         this.$emit("on-keyup-enter");
       }*/
     },
-    onFocus() {
-      this.editorHasFocus = this.editor.hasFocus();
-    },
     onClose() {
       this.$emit("on-keyup-escape");
     },
@@ -450,18 +354,13 @@ export default {
       }
 
       let value = !format[formatName];
-      console.log("RichTextEditor simpleFormat this.editor.format(formatName, value)", formatName, value)
       this.editor.format(formatName, value);
-      let formats = this.editor.getFormat(selection.index, selection.length);
-      this.updateButtons(formats);
     },
 
     insertPageBreak(pageNum) {
       this.insertEmbed("page", pageNum);
     },
     insertEmbed(formatName, value) {
-      console.log("RTE insertEmbed(formatName, value)", formatName, value)
-      console.log("insertEmbed", formatName, value);
       let format = {};
       format[formatName] = value;
       let range = this.editor.getSelection(true);
@@ -469,35 +368,6 @@ export default {
       this.editor.setSelection(range.index + 2, Quill.sources.SILENT);
     },
 
-    updateButtons(formats) {
-      console.log('update buttons', formats)
-      /*2023 07 7 changed logic to refresh child props (undetected attribute updates per code below :
-      if (_isEmpty(formats)) formats = { paragraph: true };
-      for (let key in this.buttons) {
-        this.buttons[key] = !!formats[key];
-      }*/
-      let keys = Object.keys(formats);
-      console.log('update buttons keys', keys)
-
-
-      //resetting all buttons to false
-      Object.keys(this.buttons).forEach(v => this.buttons[v] = false);
-      //using spread op to recreate object to trigger child props update
-      for (let index in keys) {
-        console.log('update buttons key', keys[index])
-        let updatedFormat = !!formats[keys[index]];
-        console.log('update buttons updatedFormat', updatedFormat)
-        this.buttons = {...this.buttons, [keys[index]]: updatedFormat};
-      }
-      console.log("this.buttons", this.buttons)
-    },
-
-    setRangeBound(range) {
-      let rangeBounds = this.editor.getBounds(range);
-      this.actionsPositions.left = rangeBounds.left;
-      this.actionsPositions.right = rangeBounds.right;
-      this.actionsPositions.bottom = rangeBounds.bottom;
-    },
     // expand range selection to whole Blot if preexisting Blot ("person", "location", "italic", "superscript", "link")
     expandSelection(range) {
       console.log("expandSelection original range : ", range)
@@ -517,41 +387,24 @@ export default {
      *
      * NOTES METHODS
      */
-    NoteActionPreparation() {
-      const pattern = /\[note]/gmi
-      let testEditor = this.editor.getText(0,)
-      console.log("testEditor", testEditor)
-      let inTranscription = pattern.test(testEditor);
-        console.log("inTranscription", inTranscription)
-      if (inTranscription) {
-        this.$emit("add-note", "test")
-      } else {
-        this.displayNoteActionForm()
-      }
-    },
     displayNoteActionForm() {
-      const range = this.editor.getSelection();
-      const selection = this.editor.getText(range.index, range.length);
-      const formats = this.editor.getFormat();
-      console.log("displayNoteActionForm range, selection, formats", range, selection, formats)
-
-      if (formats.note) {
-        this.selectedNoteId = formats.note.id;
+      const {note} = this.selectedFormats
+      if (note) {
+        this.selectedNoteId = note.id;
       } else {
         console.log("displayNoteActionForm New Note")
       }
-      console.log("displayNoteActionForm range, selection, formats", range, selection, formats)
 
       const _editor = this.editor;
 
       let restoreRangeCallback = function() {
-        _editor.setSelection(range.index, range.length, Quill.sources.SILENT);
+        _editor.setSelection(this.currentSelection.index, this.currentSelection.length, Quill.sources.SILENT);
       }
 
       this.$emit("add-note", {
         role: "inlined",
-        selection,
-        formats,
+        selection: this.currentSelection,
+        note: note || null,
         restoreRangeCallback,
         insertTagCallback: this.submitNoteActionForm,
         removeTagCallback: this.removeNoteActionForm,
@@ -560,21 +413,13 @@ export default {
     submitNoteActionForm(note) {
       this.requireSave = true;
       console.log("RTE / submitNoteActionForm : note ", note)
-      this.editor.format("note", {note: note});
+      this.editor.format("note", note);
       let formats = this.editor.getFormat();
-      this.updateButtons(formats);
       this.editor.setSelection(0, 0)
     },
     removeNoteActionForm() {
       this.requireSave = true;
-      this.editor.format("note", false);
-      let formats = this.editor.getFormat();
-      this.updateButtons(formats);
-    },
-
-    addNote(evt) {
-      console.log("transcription RTE addNote(evt)", evt, {...evt})
-      this.$emit("add-note", evt);
+      this.selectedEmbed.remove()
     },
 
     /**************
@@ -583,48 +428,34 @@ export default {
      */
 
     displayTextfieldForm(formData) {
-      let format = this.editor.getFormat();
-      console.log("displayTextfieldForm format : ", format)
-      if (format.href) {
-        formData.value = format.pageNum;
-        formData.url = format.href;
-      } else {
-        console.log("new page break")
-      }
-      console.log("displayTextfieldForm formData : ", formData)
-      /*if (formData.format === 'page') {
-        formData.href ===
-      }*/
       this.formTextfield = formData;
-      console.log("displayTextfieldForm this.formTextfield : ", this.formTextfield)
     },
     closeTextfieldForm() {
       this.formTextfield = null;
-      this.customSubmitTextfieldForm = null;
     },
     removeTextfieldForm() {
-      this.editor.format(this.formTextfield.format, false);
-      console.log("removeTextfieldForm this.formTextfield.format", this.formTextfield.format)
-      /*if (this.formTextfield.format === "page") {
-        this.removeFormat()
-      }*/
-      this.formTextfield = null;
+      if (["page"].includes(this.formTextfield.format)) {
+        if (this.selectedEmbed) {
+          this.selectedEmbed.remove()
+        }
+      } else {
+        this.editor.format(this.formTextfield.format, false);
+      }
+      this.closeTextfieldForm()
     },
     submitTextfieldForm(data) {
-      console.log("submitTextfieldForm(data)", data)
-      this.editor.format(this.formTextfield.format, data);
+      if (["page"].includes(this.formTextfield.format)) {
+        // Embed blots (excluding notes which have their)
+        if (this.selectedEmbed) {
+          this.selectedEmbed.replaceWith(Parchment.create(this.formTextfield.format, data));
+        } else {
+          this.insertEmbed(this.formTextfield.format, data);
+        }
+      } else {
+        // Inline blots
+        this.editor.format(this.formTextfield.format, data);
+      }
       this.closeTextfieldForm();
-      let formats = this.editor.getFormat();
-      this.updateButtons(formats);
-    },
-    removeFormat() {
-      //console.log("removeFormat", this.formTextfield.format)
-      const formatName = this.formTextfield.format;
-      const selection = this.editor.getSelection();
-      this.editor.format(formatName, "");
-      this.closeTextfieldForm();
-      let formats = this.editor.getFormat(selection.index, selection.length);
-      this.updateButtons(formats);
     },
 
     /**************
@@ -643,7 +474,6 @@ export default {
       // update range, selection with expanded Blot if preexisting Blot
       range = this.editor.getSelection();
       selection = this.editor.getText(range.index, range.length);
-      // console.log("displayLocationForm range, selection, formats", range, selection, formats);
 
       const _editor = this.editor;
 
@@ -662,14 +492,9 @@ export default {
     },
     submitLocationForm(place) {
       this.editor.format("location", place);
-      let formats = this.editor.getFormat();
-      this.updateButtons(formats);
     },
     removeLocationForm() {
       this.editor.format("location", false);
-      let formats = this.editor.getFormat();
-      console.log("removeLocationForm", formats);
-      this.updateButtons(formats);
     },
 
     /**************
@@ -718,20 +543,14 @@ export default {
      */
 
     displayPageBreakForm() {
-      const range = this.editor.getSelection();
-      const selection = this.editor.getText(range.index, range.length);
-      const formats = this.editor.getFormat();
-      console.log("displayPageBreakForm range", range)
-      console.log("displayPageBreakForm formats", formats)
-      this.updateButtons(formats);
-      //this.customSubmitTextfieldForm = this.submitPageBreakForm;
-      if (formats.page && formats.page.href && formats.page.pageNum) {
+      const {page} = this.selectedFormats;
+      if (page) {
         this.displayTextfieldForm({
           format: "page",
           title: '<i class="fas fa-page"></i> Insérer un saut de page',
           label: "Numéro de page",
-          url: formats.page.href,
-          value: formats.page.pageNum,
+          url: page.href,
+          value: page.pageNum,
         });
       } else {
       this.displayTextfieldForm({
@@ -741,20 +560,6 @@ export default {
         url : ""
       });
       }
-    },
-
-    submitPageBreakForm(pageNum) {
-      console.log("submitPageBreakForm", pageNum);
-      this.insertEmbed("page", pageNum);
-      this.closeTextfieldForm();
-      let formats = this.editor.getFormat();
-      this.updateButtons(formats);
-    },
-    removePageBreakForm() {
-      this.editor.format("page", false);
-      let formats = this.editor.getFormat();
-      console.log("removePageBreakForm", formats);
-      this.updateButtons(formats);
     },
 
     /**************
@@ -792,16 +597,11 @@ export default {
       });
     },
     submitPersonForm(person) {
-      console.log("submitPersonForm / person", person)
       this.editor.format("person", person);
-      let formats = this.editor.getFormat();
-      this.updateButtons(formats);
+      this.editor.setSelection()
     },
     removePersonForm() {
       this.editor.format("person", false);
-      let formats = this.editor.getFormat();
-      console.log("removePersonForm", formats)
-      this.updateButtons(formats);
     },
 
     /**************
