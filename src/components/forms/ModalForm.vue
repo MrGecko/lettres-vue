@@ -6,9 +6,10 @@
     />
     <div class="modal-card">
       <header class="modal-card-head">
-        <p class="modal-card-title">
-          {{ title }}
-        </p>
+        <p
+          class="modal-card-title"
+          v-html="title"
+        />
         <button
           class="delete"
           aria-label="close"
