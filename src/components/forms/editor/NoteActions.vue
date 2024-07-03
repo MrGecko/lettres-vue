@@ -253,18 +253,12 @@
         if (notesToRenumber.length === 0) {
           this.$store.dispatch("document/removeNote", noteIdToDelete).then((noteIdToDelete) => {
           this.inputData.removeTagCallback();
-          //this.removeNoteFromDocument(noteIdToDelete);
-          //this.removeNoteFromWitnesses(noteIdToDelete);
           this.cancelNoteDelete();
           this.$emit("close");
           });
         } else {
             this.$store.dispatch("document/removeNote", noteIdToDelete).then((noteIdToDelete) => {
               this.removeNoteFromDocument(noteIdToDelete, notesToRenumber);
-              console.log("check document notes in store after delete", this.$store.state.document.notes)
-              //notesToRenumber.forEach(n => this.renumberNotes(n.id));
-              //this.inputData.removeTagCallback();
-              //this.removeNoteFromWitnesses(noteIdToDelete);
               this.cancelNoteDelete();
               this.$emit("close");
           });
@@ -273,181 +267,76 @@
       cancelNoteDelete() {
         this.noteIdToDelete = null;
       },
+      removeNoteFromSection(sectionContent, noteId, notesToRenumber) {
+        const sectionWithoutContentEditable = removeContentEditableAttributesFromString(
+            sectionContent
+          );
+          const sectionDOM = new DOMParser().parseFromString(sectionWithoutContentEditable, "text/html")
+          const toRemove = sectionDOM.querySelectorAll(`.note[href="#${noteId}"]`)
+          let changed = false;
+          if (toRemove.length > 0) {
+            changed = true
+            toRemove.forEach(element => element.remove())
+          }
+          if (notesToRenumber) {
+            notesToRenumber.forEach(n => {
+                const foundNotes = sectionDOM.querySelectorAll(`.note[href="#${n.id}"]`)
+                if (foundNotes.length > 0) {
+                  changed = true
+                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
+                  foundNotes.forEach(noteElement => {
+                    noteElement.innerHTML = `[${newNoteIndex}]`
+                  })
+                }
+            })
+          }
+
+          if (changed) {
+            return sectionDOM.body.outerHTML
+          }
+          return 
+
+      },
       removeNoteFromDocument(noteId, notesToRenumber) {
-        const pattern = new RegExp(
-          '<a class="note" href="#' + noteId + '">\\[\\d+]<\\/a>',
-          "mgi"
-        );
         const attributes = {};
         let changed = false;
         if (this.transcriptionContent) {
-          const docTranscription = removeContentEditableAttributesFromString(
-            this.transcriptionContent
-          );
-          const inTranscription = pattern.test(docTranscription);
-          if (inTranscription) {
-            attributes.transcription = docTranscription.replace(pattern, "");
-            if (notesToRenumber) {
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-          '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-            "mgi"
-                );
-                const renumberInTranscription = patternRenumber.test(attributes.transcription);
-                if (renumberInTranscription) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.transcription = attributes.transcription.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-transcription", attributes.transcription);
-          } else {
-            if (notesToRenumber) {
-              attributes.transcription = docTranscription;
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-          '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-            "mgi"
-                );
-                const renumberInTranscription = patternRenumber.test(attributes.transcription);
-                if (renumberInTranscription) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.transcription = attributes.transcription.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-transcription", attributes.transcription);
+          const newTranscription = this.removeNoteFromSection(this.transcriptionContent, noteId, notesToRenumber);
+          if (newTranscription) {
+            attributes.transcription = newTranscription;
+            this.$emit("refresh-transcription", newTranscription);
+            changed = true
           }
         }
         if (this.addressContent) {
-          const docAddress = removeContentEditableAttributesFromString(this.addressContent);
-          const inAddress = pattern.test(docAddress);
-          if (inAddress) {
-            attributes.address = docAddress.replace(pattern, "");
-            if (notesToRenumber) {
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-                    '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-                    "mgi"
-                );
-                const renumberInAddress = patternRenumber.test(attributes.address);
-                if (renumberInAddress) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.address = attributes.address.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-address", attributes.address);
-          } else {
-            if (notesToRenumber) {
-              attributes.address = docAddress;
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-          '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-            "mgi"
-                );
-                const renumberInAddress = patternRenumber.test(attributes.address);
-                if (renumberInAddress) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.address = attributes.address.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-address", attributes.address);
+          const newAddressContent = this.removeNoteFromSection(this.addressContent, noteId, notesToRenumber);
+          if (newAddressContent) {
+            attributes.address = newAddressContent;
+            this.$emit("refresh-address", newAddressContent);
+            changed = true
           }
         }
         if (this.titleContent) {
-          const docTitle = removeContentEditableAttributesFromString(this.titleContent);
-          const inTitle = pattern.test(docTitle);
-          if (inTitle) {
-            attributes.title = docTitle.replace(pattern, "");
-            if (notesToRenumber) {
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-                    '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-                    "mgi"
-                );
-                const renumberInTitle = patternRenumber.test(attributes.title);
-                if (renumberInTitle) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.title = attributes.title.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-title", attributes.title);
-          } else {
-            if (notesToRenumber) {
-              attributes.title = docTitle;
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-                    '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-                    "mgi"
-                );
-                const renumberInTitle = patternRenumber.test(attributes.title);
-                if (renumberInTitle) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.title = attributes.title.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-title", attributes.title);
+          const newTitleContent = this.removeNoteFromSection(this.titleContent, noteId, notesToRenumber);
+          if (newTitleContent) {
+            attributes.title = newTitleContent;
+            this.$emit("refresh-title", newTitleContent);
+            changed = true
           }
         }
         if (this.document["creation-label"]) {
-          const docLabel = removeContentEditableAttributesFromString(
-            this.document["creation-label"]
-          );
-          const inLabel = pattern.test(docLabel);
-          if (inLabel) {
-            attributes["creation-label"] = docLabel.replace(pattern, "");
-            changed = true;
+          const newCreationLabel = this.removeNoteFromSection(this.document["creation-label"], noteId, notesToRenumber);
+          if (newCreationLabel) {
+            attributes['creation-label'] = newCreationLabel;
+            changed = true
           }
         }
         if (this.argumentContent) {
-          const docArgument = removeContentEditableAttributesFromString(
-            this.argumentContent
-          );
-          const inArgument = pattern.test(docArgument);
-          if (inArgument) {
-            attributes.argument = docArgument.replace(pattern, "");
-            if (notesToRenumber) {
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-                    '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-                    "mgi"
-                );
-                const renumberInArgument = patternRenumber.test(attributes.argument);
-                if (renumberInArgument) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.argument = attributes.argument.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-argument", attributes.argument)
-          } else {
-            if (notesToRenumber) {
-              attributes.argument = docArgument;
-              notesToRenumber.forEach(n => {
-                const patternRenumber = new RegExp(
-                    '<a class="note" href="#' + n.id + '">\\[\\d+]<\\/a>',
-                    "mgi"
-                );
-                const renumberInArgument = patternRenumber.test(attributes.argument);
-                if (renumberInArgument) {
-                  let newNoteIndex = this.$store.state.document.notes.findIndex(note => note.id === n.id) + 1;
-                  attributes.argument = attributes.argument.replace(patternRenumber, `<a class="note" href="#${n.id}">[${newNoteIndex}]</a>`);
-                }
-              })
-            }
-            changed = true;
-            this.$emit("refresh-argument", attributes.argument);
+          const newArgumentContent = this.removeNoteFromSection(this.argumentContent, noteId, notesToRenumber);
+          if (newArgumentContent) {
+            attributes.argument = newArgumentContent;
+            this.$emit("refresh-argument", newArgumentContent);
+            changed = true
           }
         }
         if (changed) {
@@ -469,89 +358,6 @@
         }
       },
 
-      renumberNotes(noteId) {
-        const pattern = new RegExp(
-          '<a class="note" href="#' + noteId + '">\\[\\d+]<\\/a>',
-          "mgi"
-        );
-        let noteRegexp = /<a class="note" href="#\d+">\[(\d+)]<\/a>/gmi;
-        const attributes = {};
-        let changed = false;
-        console.log("changed this.transcriptionContent", this.transcriptionContent, this.document.transcription)
-        if (this.transcriptionContent) {
-          const docTranscription = removeContentEditableAttributesFromString(
-            this.transcriptionContent
-          );
-          console.log("changed docTranscription", docTranscription)
-          const inTranscription = pattern.test(docTranscription);
-          console.log("inTranscription", inTranscription)
-          if (inTranscription) {
-            console.log("inTranscription", inTranscription)
-            let newNoteIndex = noteRegexp.exec(docTranscription)[1] - 1
-            attributes.transcription = docTranscription.replace(pattern, `<a class="note" href="#${noteId}">[${newNoteIndex}]</a>`);
-            changed = true;
-            this.$emit("refresh-transcription", attributes.transcription)
-          }
-        }
-        console.log("changed this.addressContent", this.addressContent, this.document.address)
-        if (this.addressContent) {
-          const docAddress = removeContentEditableAttributesFromString(this.addressContent);
-          const inAddress = pattern.test(docAddress);
-          console.log("inAddress", inAddress);
-          if (inAddress) {
-            console.log("inAddress", inAddress)
-            let newNoteIndex = noteRegexp.exec(docAddress)[1] - 1
-            attributes.transcription = docAddress.replace(pattern, `<a class="note" href="#' + noteId + '">${newNoteIndex}<\\/a>`);
-
-            changed = true;
-            this.$emit("refresh-address", attributes.address);
-          }
-        }
-        console.log("changed this.titleContent", this.titleContent, this.document.title);
-        if (this.titleContent) {
-          const docTitle = removeContentEditableAttributesFromString(this.titleContent);
-          const inTitle = pattern.test(docTitle);
-          console.log("inTitle", inTitle);
-          if (inTitle) {
-            console.log("inTitle", inTitle);
-            let newNoteIndex = noteRegexp.exec(docTitle)[1] - 1
-            attributes.transcription = docTitle.replace(pattern, `<a class="note" href="#' + noteId + '">${newNoteIndex}<\\/a>`);
-            changed = true;
-            this.$emit("refresh-title", attributes.title)
-          }
-        }
-        console.log("changed this.argumentContent", this.argumentContent, this.document.argument);
-        if (this.argumentContent) {
-          const docArgument = removeContentEditableAttributesFromString(
-            this.argumentContent
-          );
-          const inArgument = pattern.test(docArgument);
-          console.log("inArgument", inArgument);
-          if (inArgument) {
-            let newNoteIndex = noteRegexp.exec(docArgument)[1] - 1
-            attributes.transcription = docArgument.replace(pattern, `<a class="note" href="#' + noteId + '">${newNoteIndex}<\\/a>`);
-            changed = true;
-            this.$emit("refresh-argument", attributes.argument)
-          }
-        }
-        /*if (changed) {
-          const data = { id: this.document.id, attributes };
-          this.$store
-            .dispatch("document/save", data)
-            .then((response) => {
-              if (attributes.transcription) {
-                this.transcriptionContent = attributes.transcription;
-              }
-              if (attributes.address) {
-                this.addressContent = attributes.address;
-                console.log("attributes.address changed")
-              }
-            })
-            .catch((err) => {
-              console.error(err);
-            });
-        }*/
-      },
       editAction() {
         console.log("NoteActions / editAction / this.inputData", this.inputData)
         this.noteWithMode = this.inputData;
