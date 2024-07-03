@@ -3,11 +3,6 @@
     class="field rich-text-editor"
     style="width: 100%"
   >
-    <!--<field-label
-      v-if="!!label"
-      :label="label"
-    />-->
-
     <div class="editor-area">
       <div
         ref="controls"
@@ -82,11 +77,10 @@ export default {
   components: {
     TextfieldForm,
     EditorButton,
-  },//FieldLabel, NoteActions,
+  },
   directives: {
     ClickOutside,
   },
-  //mixins: [EditorMixins],
   props: {
     label: { type: String, default: null },
     value: { type: String, default: "" }, // v-model support
@@ -143,12 +137,6 @@ export default {
         cite: { cb: this.simpleFormat, active: this.editorHasFocus },
         close: { cb: this.onClose, active: true }
       };
-    },
-    actionsPosition() {
-      /** get the actions bar position **/
-      let top = this.actionsPositions.bottom + 5;
-      let left = (this.actionsPositions.left + this.actionsPositions.right) / 2;
-      return `top:${top}px;left:${left}px`;
     },
     isNoteButtonActive() {
       if (!this.editor) return;

@@ -33,20 +33,6 @@
       >
         Annuler
       </b-button>
-      <!--<b-button
-        v-if="inputData.note || inputData.formats.note"
-        type="is-primary"
-        size="is-medium"
-        @click="deleteAction(parseInt(inputData.note || inputData.formats.note.id))"
-      >
-        Supprimer l'appel de note
-      </b-button>-->
-      <!--<modal-confirm-note-delete
-        v-if="noteIdToDelete"
-        :note-id="noteIdToDelete ? noteIdToDelete : null"
-        :cancel="cancelNoteDelete"
-        :submit="confirmNoteDelete"
-      />-->
     </div>
   </div>
   <div
@@ -342,8 +328,6 @@ export default {
       console.log("confirmNoteDelete(noteId)", noteIdToDelete)
       this.$store.dispatch("document/removeNote", noteIdToDelete).then((noteIdToDelete) => {
         this.inputData.removeTagCallback();
-        //this.removeNoteFromDocument(noteIdToDelete);
-        //this.removeNoteFromWitnesses(noteIdToDelete);
         this.cancelNoteDelete();
         this.cancelAction();
       });
