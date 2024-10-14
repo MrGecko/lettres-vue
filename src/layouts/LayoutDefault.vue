@@ -111,24 +111,30 @@
         </div>-->
       </div>
     </section>
-    <footer class="footer">
+    <footer class="footer footer-logos">
       <nav>
         <ul class="is-flex is-justify-content-space-between">
           <li>
-            <a href="">
+            <a
+              target="_blank"
+              href="https://www.chartes.psl.eu/"
+            >
               <img
                 class="enc-logo"
-                src="@/assets/images/logos/logo-footer.png"
-                alt=""
+                src="@/assets/images/logos/logo-enc-white-enhanced.png"
+                alt="Logo École nationale des chartes"
               >
             </a>
           </li>
           <li>
-            <a href="">
+            <a
+              target="_blank"
+              href="https://cths.fr/"
+            >
               <img
                 class="cths-logo"
-                src="@/assets/images/logos/logo-cths-footer.png"
-                alt=""
+                src="@/assets/images/logos/logo-cths-white-enhanced.png"
+                alt="Logo Comité des travaux historiques et scientifiques"
               >
             </a>
           </li>
@@ -339,6 +345,13 @@ footer {
     }
 
     ul {
+      img {
+        transform-origin: 50% 50%;
+        transition: transform ease-in-out 0.35s;
+      }
+      img:hover {
+        transform: scale(1.25);
+      }
 
       @include on-mobile {
         flex-direction: column;
@@ -347,10 +360,10 @@ footer {
       }
 
       .enc-logo {
-        height: 70px;
+        height: 100px;
 
         @include on-mobile {
-          height: 50px;
+          height: 60px;
         }
       }
 
