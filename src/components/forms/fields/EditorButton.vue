@@ -49,7 +49,8 @@ export default {
         "note": "Note",
         "link": "Lien",
         "close": "Fermer",
-        "del": "Barré"
+        "del": "Barré",
+        "remove": "Retirer le formatage"
       }
       return tooltips[format]
     },
@@ -94,6 +95,7 @@ export default {
       background-image: url(../../../assets/images/icons/editor_underline.svg);
     }
 
+    &.remove-btn,
     &.del-btn {
       background-image: url(../../../assets/images/icons/editor_del.svg);
     }

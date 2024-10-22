@@ -4,7 +4,7 @@
     class="modal-card note-form"
   >
     <header class="is-uppercase is-size-2 mb-5">
-      <h1>{{ $attrs.header }} : {{ inputData && inputData.note || inputData && inputData.formats.note ? "éditer la note" : "nouvelle note" }}</h1>
+      <h1>{{ $attrs.header }} : {{ inputData && inputData.note ? "éditer la note" : "nouvelle note" }}</h1>
     </header>
     <div class="editor">
       <rich-text-editor
@@ -33,20 +33,6 @@
       >
         Annuler
       </b-button>
-      <!--<b-button
-        v-if="inputData.note || inputData.formats.note"
-        type="is-primary"
-        size="is-medium"
-        @click="deleteAction(parseInt(inputData.note || inputData.formats.note.id))"
-      >
-        Supprimer l'appel de note
-      </b-button>-->
-      <!--<modal-confirm-note-delete
-        v-if="noteIdToDelete"
-        :note-id="noteIdToDelete ? noteIdToDelete : null"
-        :cancel="cancelNoteDelete"
-        :submit="confirmNoteDelete"
-      />-->
     </div>
   </div>
   <div
@@ -197,13 +183,38 @@ export default {
   },
   emits: ["add-place", "add-person", "close"],
   data() {
+    let notesList = []
+    let selected = []
+    let form = {}
+    let existingNote;
+    // check if triggered from notes list (this.inputData.note) or existing note in editor (this.inputData.formats.note) :
+    if (this.inputData && !this.inputList) {
+      if (this.inputData.note) {
+          console.log("NoteForm mounted inputData (existing note) : ", this.inputData)
+          // retrieve note if from inputData
+          form.id = parseInt(this.inputData.note.id);
+          // retrieve note content from store
+          console.log("mounted this.form.id : ", form.id)
+          let existingNote = this.$store.state.document.notes.filter((note) => parseInt(note.id) === parseInt(form.id))[0];
+          console.log("existingNote : ", existingNote);
+          form.content = existingNote.content;
+      }
+    } else {
+      if (this.inputList.length) {
+        console.log("NoteForm mounted inputList : ", this.inputList)
+        notesList = this.inputList
+        if (this.inputData && this.inputData.selected) {
+          existingNote = this.inputData.selected;
+          selected = this.inputData.selected
+        }
+      }
+    }
     return {
-      form: {},
-      textLength: 0,
+      form,
+      notesList,
+      selected,
+      existingNote,
       loading: false,
-      notesList: [],
-      selected: null,
-      existingNote: null,
       noteIdToDelete: null,
       dynamicTitle: null
     };
@@ -218,33 +229,6 @@ export default {
     this.$options.components.RichTextEditor = require("./fields/RichTextEditor").default;
   },
   mounted() {
-    // check if triggered from notes list (this.inputData.note) or existing note in editor (this.inputData.formats.note) :
-    if (this.inputData && !this.inputList) {
-      if (this.inputData.note ? this.inputData.note : false || this.inputData.formats.note ? this.inputData.formats.note : false) {
-        if (this.inputData.note) {
-          console.log("NoteForm mounted inputData : ", this.inputData)
-          this.form = {...this.inputData.note}
-        } else {
-          console.log("NoteForm mounted inputData (existing note) : ", this.inputData)
-          // retrieve note if from inputData
-          this.form.id = parseInt(this.inputData.formats.note.id);
-          // retrieve note content from store
-          console.log("mounted this.form.id : ", this.form.id)
-          let existingNote = this.$store.state.document.notes.filter((note) => parseInt(note.id) === parseInt(this.form.id))[0];
-          console.log("existingNote : ", existingNote);
-          this.form.content = existingNote.content;
-        }
-      }
-    } else {
-      if (this.inputList.length) {
-        console.log("NoteForm mounted inputList : ", this.inputList)
-        this.notesList = this.inputList
-        if (this.inputData && this.inputData.selected) {
-          this.existingNote = this.inputData.selected;
-          this.selected = this.inputData.selected
-        }
-      }
-    }
   },
   watch: {
     async selected() {
@@ -342,8 +326,6 @@ export default {
       console.log("confirmNoteDelete(noteId)", noteIdToDelete)
       this.$store.dispatch("document/removeNote", noteIdToDelete).then((noteIdToDelete) => {
         this.inputData.removeTagCallback();
-        //this.removeNoteFromDocument(noteIdToDelete);
-        //this.removeNoteFromWitnesses(noteIdToDelete);
         this.cancelNoteDelete();
         this.cancelAction();
       });

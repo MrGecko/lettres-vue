@@ -117,7 +117,7 @@ export default {
           this.$props.submit({href: this.form2, pageNum: this.form1});
         } else {
           console.log("{ href: this.form1, pageNum: this.form2}", { href: this.form2, pageNum: this.form1 })
-          this.$props.submit({ page: { href: this.form2, pageNum: this.form1 }});
+          this.$props.submit({  href: this.form2, pageNum: this.form1 });
         }
       } else {
         this.$props.submit(this.form1);
